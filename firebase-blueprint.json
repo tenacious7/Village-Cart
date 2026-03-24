@@ -1,0 +1,125 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "A product in the shop",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "English name" },
+        "name_od": { "type": "string", "description": "Odia name" },
+        "category": { "type": "string", "description": "Category" },
+        "price": { "type": "number", "description": "Price" },
+        "quantity": { "type": "number", "description": "Stock quantity" },
+        "image": { "type": "string", "description": "Image URL" },
+        "is_loose": { "type": "boolean", "description": "Whether the product is sold loose" }
+      },
+      "required": ["name", "category", "price", "quantity"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "customerName": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "price": { "type": "number" },
+              "quantity": { "type": "number" },
+              "is_loose": { "type": "boolean" },
+              "unit": { "type": "string" },
+              "selected": { "type": "boolean" }
+            }
+          }
+        },
+        "total": { "type": "number" },
+        "status": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "customerName", "customerPhone", "items", "total", "status", "createdAt"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "A notification for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "read", "createdAt"]
+    },
+    "User": {
+      "title": "User",
+      "description": "User profile and settings",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "role": { "type": "string" },
+        "phone": { "type": "string" },
+        "faceImage": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "fullName": { "type": "string" },
+        "address": { "type": "string" },
+        "ownerName": { "type": "string" },
+        "shopName": { "type": "string" },
+        "village": { "type": "string" },
+        "notificationSound": { "type": "boolean" }
+      }
+    },
+    "ShopSettings": {
+      "title": "Shop Settings",
+      "description": "Global shop settings and home page customization",
+      "type": "object",
+      "properties": {
+        "homeSections": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "title": { "type": "string" },
+              "title_od": { "type": "string" },
+              "type": { "type": "string", "enum": ["banner", "new_arrivals", "featured_category", "custom_list"] },
+              "content": { "type": "object" },
+              "active": { "type": "boolean" },
+              "order": { "type": "number" }
+            }
+          }
+        },
+        "shopName": { "type": "string" },
+        "shopName_od": { "type": "string" }
+      }
+    }
+  },
+  "firestore": {
+    "products/{productId}": {
+      "schema": { "$ref": "Product" },
+      "description": "Product collection"
+    },
+    "orders/{orderId}": {
+      "schema": { "$ref": "Order" },
+      "description": "Order collection"
+    },
+    "notifications/{notificationId}": {
+      "schema": { "$ref": "Notification" },
+      "description": "Notification collection"
+    },
+    "users/{userId}": {
+      "schema": { "$ref": "User" },
+      "description": "User collection"
+    },
+    "settings/{settingId}": {
+      "schema": { "$ref": "ShopSettings" },
+      "description": "Global shop settings"
+    }
+  }
+}

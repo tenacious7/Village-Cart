@@ -1,0 +1,151 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: products
+    // Document ID: {productId}
+    // Fields:
+    //   - name: string (required) - English name
+    //   - name_od: string (optional) - Odia name
+    //   - category: string (required) - Category
+    //   - price: number (required) - Price
+    //   - quantity: number (required) - Stock quantity
+    //   - image: string (optional) - Image URL
+    //   - is_loose: boolean (optional)
+    //
+    // Collection: orders
+    // Document ID: {orderId}
+    // Fields:
+    //   - userId: string (required)
+    //   - customerName: string (required)
+    //   - customerPhone: string (required)
+    //   - items: list (required)
+    //   - total: number (required)
+    //   - status: string (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: notifications
+    // Document ID: {notificationId}
+    // Fields:
+    //   - userId: string (required)
+    //   - title: string (required)
+    //   - message: string (required)
+    //   - read: boolean (required)
+    //   - createdAt: timestamp (required)
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - role: string (optional)
+    //   - notificationSound: boolean (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+       return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.get('role', '') == 'admin' ||
+          (request.auth.token.email == "brijeshghadei@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function hasRequiredFields(fields) {
+       return request.resource.data.keys().hasAll(fields);
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+    function isValidProduct(data) {
+      return hasOnlyAllowedFields(['name', 'name_od', 'category', 'price', 'quantity', 'image', 'is_loose']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             (!('name_od' in data) || (data.name_od is string && data.name_od.size() < 100)) &&
+             data.category is string && data.category.size() > 0 && data.category.size() < 50 &&
+             data.price is number && data.price >= 0 &&
+             data.quantity is number && data.quantity >= 0 &&
+             (!('image' in data) || (data.image is string && data.image.size() < 500)) &&
+             (!('is_loose' in data) || data.is_loose is bool);
+    }
+
+    function isValidOrder(data) {
+      return hasOnlyAllowedFields(['userId', 'customerName', 'customerPhone', 'items', 'total', 'status', 'createdAt']) &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.customerName is string && data.customerName.size() > 0 && data.customerName.size() < 100 &&
+             data.customerPhone is string && data.customerPhone.size() > 0 && data.customerPhone.size() < 20 &&
+             data.items is list &&
+             data.total is number && data.total >= 0 &&
+             data.status is string && data.status.size() > 0 &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidNotification(data) {
+      return hasOnlyAllowedFields(['userId', 'title', 'message', 'read', 'createdAt']) &&
+             data.userId is string && data.userId.size() > 0 &&
+             data.title is string && data.title.size() > 0 && data.title.size() < 100 &&
+             data.message is string && data.message.size() > 0 && data.message.size() < 500 &&
+             data.read is bool &&
+             data.createdAt is timestamp;
+    }
+
+    function isValidUser(data) {
+      return hasOnlyAllowedFields(['uid', 'role', 'phone', 'faceImage', 'createdAt', 'fullName', 'address', 'ownerName', 'shopName', 'village', 'notificationSound']) &&
+             (!('uid' in data) || data.uid is string) &&
+             (!('role' in data) || data.role is string) &&
+             (!('phone' in data) || data.phone is string) &&
+             (!('faceImage' in data) || data.faceImage == null || data.faceImage is string) &&
+             (!('createdAt' in data) || data.createdAt is timestamp) &&
+             (!('fullName' in data) || data.fullName is string) &&
+             (!('address' in data) || data.address is string) &&
+             (!('ownerName' in data) || data.ownerName is string) &&
+             (!('shopName' in data) || data.shopName is string) &&
+             (!('village' in data) || data.village is string) &&
+             (!('notificationSound' in data) || data.notificationSound is bool);
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+    match /products/{productId} {
+      allow read: if true; // Publicly readable
+      allow create, update: if isAdmin() && isValidProduct(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /orders/{orderId} {
+      allow read: if isAuthenticated() && (isAdmin() || request.auth.uid == resource.data.userId);
+      allow create: if isAuthenticated() && isValidOrder(request.resource.data) && request.resource.data.userId == request.auth.uid;
+      allow update: if isAdmin() && isValidOrder(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAdmin() && isValidNotification(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']) && request.resource.data.read is bool;
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role in ['customer', 'admin']);
+      allow update: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role || isAdmin());
+    }
+
+    match /settings/{settingId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+  }
+}
