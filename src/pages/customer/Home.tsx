@@ -186,29 +186,34 @@ export default function Home() {
       </AnimatePresence>
 
       {/* Categories */}
-      <section className="bg-white py-4 px-4 shadow-sm">
-        <h2 className="text-lg font-display font-bold text-text mb-4">Shop by Category</h2>
-        <motion.div 
-          variants={containerVariants}
-          initial="hidden"
-          animate="show"
-          className="flex justify-between overflow-x-auto pb-2 hide-scrollbar gap-4"
-        >
-          {categories.map(cat => (
-            <motion.button 
-              key={cat.name} 
-              variants={itemVariants}
-              whileHover={{ y: -5 }}
-              whileTap={{ scale: 0.95 }}
-              className="flex flex-col items-center gap-2 min-w-[72px]"
-            >
-              <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-inner ${cat.color}`}>
-                {cat.icon}
-              </div>
-              <span className="font-medium text-[11px] text-text text-center leading-tight">{cat.name}</span>
-            </motion.button>
-          ))}
-        </motion.div>
+      <section className="relative py-6 px-4 bg-gradient-to-br from-blue-50 via-indigo-50/50 to-purple-50 shadow-sm border-y border-indigo-100/50 overflow-hidden">
+        <div className="absolute -right-10 -top-10 w-32 h-32 bg-purple-200/40 rounded-full blur-2xl"></div>
+        <div className="absolute -left-10 -bottom-10 w-32 h-32 bg-blue-200/40 rounded-full blur-2xl"></div>
+        
+        <div className="relative z-10">
+          <h2 className="text-lg font-display font-bold text-text mb-5 drop-shadow-sm">Shop by Category</h2>
+          <motion.div 
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+            className="flex justify-between overflow-x-auto pb-3 hide-scrollbar gap-5 snap-x"
+          >
+            {categories.map(cat => (
+              <motion.button 
+                key={cat.name} 
+                variants={itemVariants}
+                whileHover={{ y: -5 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex flex-col items-center gap-2 min-w-[72px] snap-start"
+              >
+                <div className={`w-16 h-16 rounded-full flex items-center justify-center shadow-md border-2 border-white/60 ${cat.color}`}>
+                  {cat.icon}
+                </div>
+                <span className="font-bold text-[11px] text-text/80 text-center leading-tight">{cat.name}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        </div>
       </section>
 
       {/* All Products */}
